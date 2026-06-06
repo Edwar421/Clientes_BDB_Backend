@@ -5,18 +5,26 @@ import {
     CreateDateColumn,
 } from "typeorm";
 
+export type typeIdentification =
+    | "cedula de ciudadania"
+    | "cedula de extranjeria"
+    | "pasaporte";
+
 export type CustomerProduct =
-    | "Cuenta de Ahorros"
-    | "Cuenta Corriente"
-    | "Tarjeta de Credito"
-    | "Credito Libre Inversion"
-    | "Credito de Vehiculo"
-    | "Credito Rotativo";
+    | "cuenta de ahorros"
+    | "cuenta corriente"
+    | "tarjeta de credito"
+    | "credito libre inversion"
+    | "credito de vehiculo"
+    | "credito rotativo";
 
 @Entity()
 export class Customer {
     @PrimaryGeneratedColumn()
     id!: number;
+
+    @Column({ length: 40 })
+    typeId!: typeIdentification;
 
     @Column({ unique: true, length: 10 })
     identification!: string;

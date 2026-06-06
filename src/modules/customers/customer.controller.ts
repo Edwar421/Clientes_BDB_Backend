@@ -1,14 +1,21 @@
 import { Request, Response } from "express";
 import { AppDataSource } from "../../ormconfig";
-import { Customer, CustomerProduct } from "../../entities/Customer";
+import { Customer, CustomerProduct, typeIdentification } from "../../entities/Customer";
+
+
+const customerTypes: typeIdentification[] = [
+    "cedula de ciudadania",
+    "cedula de extranjeria",
+    "pasaporte"
+];
 
 const customerProducts: CustomerProduct[] = [
-    "Cuenta de Ahorros",
-    "Cuenta Corriente",
-    "Tarjeta de Credito",
-    "Credito Libre Inversion",
-    "Credito de Vehiculo",
-    "Credito Rotativo",
+    "cuenta de ahorros",
+    "cuenta corriente",
+    "tarjeta de credito",
+    "credito libre inversion",
+    "credito de vehiculo",
+    "credito rotativo",
 ];
 
 const normalizeText = (value: string) =>
@@ -21,6 +28,7 @@ const normalizeText = (value: string) =>
 const getCustomerRepository = () => AppDataSource.getRepository(Customer);
 
 const validateCustomerFields = (
+    typeId: string,
     identification: string,
     name: string,
     age: number,
@@ -28,11 +36,18 @@ const validateCustomerFields = (
     product: string
 ) => {
     const errors: string[] = [];
+    const normalizedTypeId = normalizeText(String(typeId || ""));
     const trimmedIdentification = String(identification || "").trim();
     const trimmedName = String(name || "").trim();
     const trimmedEmail = String(email || "").trim();
     const numericAge = Number(age);
     const normalizedProduct = normalizeText(String(product || ""));
+
+    if (!customerTypes.includes(normalizedTypeId as typeIdentification)) {
+        errors.push(
+            "El tipo de identificación debe ser uno de estos: cedula de ciudadania, cedula de extranjeria o pasaporte."
+        );
+    }
 
     if (!/^\d{7,10}$/.test(trimmedIdentification)) {
         errors.push(
@@ -61,6 +76,7 @@ const validateCustomerFields = (
 
     return {
         errors,
+        normalizedTypeId: normalizedTypeId as typeIdentification,
         normalizedIdentification: trimmedIdentification,
         normalizedName: trimmedName,
         normalizedAge: numericAge,
@@ -89,9 +105,10 @@ export const createCustomer = async (
     res: Response
 ): Promise<void> => {
     try {
-        const { identification, name, age, email, product } = req.body;
+        const { typeId, identification, name, age, email, product } = req.body;
 
         const validation = validateCustomerFields(
+            typeId,
             identification,
             name,
             age,
@@ -117,6 +134,7 @@ export const createCustomer = async (
         }
 
         const customer = customerRepository.create({
+            typeId: validation.normalizedTypeId,
             identification: validation.normalizedIdentification,
             name: validation.normalizedName,
             age: validation.normalizedAge,
