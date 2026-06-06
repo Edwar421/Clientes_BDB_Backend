@@ -4,11 +4,14 @@ import { AppDataSource } from "./ormconfig";
 import dotenv from "dotenv";
 import cors from "cors";
 import customerRoutes from "./routes/customers";
+import path from "path";
 
-dotenv.config();
+const appMode = (process.env.APP_MODE || "dev").toLowerCase();
+const envFile = appMode === "prod" ? ".env.prod" : ".env.dev";
+
+dotenv.config({ path: path.resolve(process.cwd(), envFile) });
 
 const app = express();
-const appMode = (process.env.APP_MODE || "dev").toLowerCase();
 const appName =
     process.env.APP_NAME ||
     (appMode === "prod" ? "customers-prod" : "customers-dev");

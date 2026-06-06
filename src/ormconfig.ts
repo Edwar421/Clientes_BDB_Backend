@@ -1,8 +1,12 @@
 import { DataSource } from "typeorm";
 import { Customer } from "./entities/Customer";
 import dotenv from "dotenv";
+import path from "path";
 
-dotenv.config();
+const appMode = (process.env.APP_MODE || "dev").toLowerCase();
+const envFile = appMode === "prod" ? ".env.prod" : ".env.dev";
+
+dotenv.config({ path: path.resolve(process.cwd(), envFile) });
 
 const requiredEnvVars = [
     "DB_HOST",

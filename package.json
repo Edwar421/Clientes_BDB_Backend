@@ -8,9 +8,10 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "npm run build && node dist/app.js",
+    "start": "npm run prod",
     "build": "tsc",
-    "dev": "nodemon --exec ts-node src/app.ts"
+    "dev": "set APP_MODE=dev&& nodemon --exec ts-node src/app.ts",
+    "prod": "set APP_MODE=prod&& npm run build && node dist/app.js"
   },
   "keywords": [],
   "author": "",
