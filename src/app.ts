@@ -3,6 +3,8 @@ import express from "express";
 import { AppDataSource } from "./ormconfig";
 import dotenv from "dotenv";
 import cors from "cors";
+import swaggerUi from "swagger-ui-express";
+import { swaggerSpec } from "./config/swagger";
 import customerRoutes from "./routes/customers";
 import path from "path";
 
@@ -24,6 +26,14 @@ const PORT = Number(
 
 app.use(cors());
 app.use(express.json());
+
+// Swagger UI
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.get("/api-docs.json", (_req, res) => {
+    res.setHeader("Content-Type", "application/json");
+    res.send(swaggerSpec);
+});
+
 app.use("/api/customers", customerRoutes);
 
 const startServer = async () => {
@@ -34,6 +44,7 @@ const startServer = async () => {
 
         app.listen(PORT, () => {
             console.log(`${appName} running on port ${PORT}`);
+            console.log(`Swagger UI available at http://localhost:${PORT}/api-docs`);
         });
     } catch (error) {
         console.error("Error during Data Source initialization:", error);
