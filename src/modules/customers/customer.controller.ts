@@ -151,3 +151,101 @@ export const createCustomer = async (
         });
     }
 };
+
+export const updateCustomer = async (
+    req: Request,
+    res: Response
+): Promise<void> => {
+    try {
+        const customerId = Number(req.params.id);
+
+        if (!Number.isInteger(customerId) || customerId <= 0) {
+            res.status(400).json({ message: "El id del cliente no es válido." });
+            return;
+        }
+
+        const { typeId, identification, name, age, email, product } = req.body;
+
+        const validation = validateCustomerFields(
+            typeId,
+            identification,
+            name,
+            age,
+            email,
+            product
+        );
+
+        if (validation.errors.length > 0) {
+            res.status(400).json({ errors: validation.errors });
+            return;
+        }
+
+        const customerRepository = getCustomerRepository();
+        const customerToUpdate = await customerRepository.findOne({
+            where: { id: customerId },
+        });
+
+        if (!customerToUpdate) {
+            res.status(404).json({ message: "Cliente no encontrado." });
+            return;
+        }
+
+        const existingCustomer = await customerRepository.findOne({
+            where: { identification: validation.normalizedIdentification },
+        });
+
+        if (existingCustomer && existingCustomer.id !== customerId) {
+            res.status(409).json({
+                message: "Ya existe un cliente con esa identificación.",
+            });
+            return;
+        }
+
+        customerToUpdate.typeId = validation.normalizedTypeId;
+        customerToUpdate.identification = validation.normalizedIdentification;
+        customerToUpdate.name = validation.normalizedName;
+        customerToUpdate.age = validation.normalizedAge;
+        customerToUpdate.email = validation.normalizedEmail;
+        customerToUpdate.product = validation.normalizedProduct;
+
+        const updatedCustomer = await customerRepository.save(customerToUpdate);
+        res.json(updatedCustomer);
+    } catch (error) {
+        res.status(500).json({
+            message: "Error actualizando cliente",
+            error: (error as Error).message,
+        });
+    }
+};
+
+export const deleteCustomer = async (
+    req: Request,
+    res: Response
+): Promise<void> => {
+    try {
+        const customerId = Number(req.params.id);
+
+        if (!Number.isInteger(customerId) || customerId <= 0) {
+            res.status(400).json({ message: "El id del cliente no es válido." });
+            return;
+        }
+
+        const customerRepository = getCustomerRepository();
+        const customerToDelete = await customerRepository.findOne({
+            where: { id: customerId },
+        });
+
+        if (!customerToDelete) {
+            res.status(404).json({ message: "Cliente no encontrado." });
+            return;
+        }
+
+        await customerRepository.remove(customerToDelete);
+        res.status(204).send();
+    } catch (error) {
+        res.status(500).json({
+            message: "Error eliminando cliente",
+            error: (error as Error).message,
+        });
+    }
+};
