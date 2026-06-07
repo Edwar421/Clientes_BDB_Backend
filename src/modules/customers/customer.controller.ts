@@ -18,7 +18,7 @@ const customerProducts: CustomerProduct[] = [
     "credito rotativo",
 ];
 
-const normalizeText = (value: string) =>
+export const normalizeText = (value: string) =>
     value
         .trim()
         .toLowerCase()
@@ -27,7 +27,7 @@ const normalizeText = (value: string) =>
 
 const getCustomerRepository = () => AppDataSource.getRepository(Customer);
 
-const validateCustomerFields = (
+export const validateCustomerFields = (
     typeId: string,
     identification: string,
     name: string,

@@ -7,7 +7,7 @@
     "test": "tests"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest --passWithNoTests",
     "start": "npm run prod",
     "build": "tsc",
     "dev": "set APP_MODE=dev&& nodemon --exec ts-node src/app.ts",
