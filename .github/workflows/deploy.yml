@@ -11,7 +11,7 @@ on:
       - "LICENSE"
 
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-latest
 
     steps:
@@ -34,7 +34,26 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build project (TypeScript)
+      - name: Run tests
+        run: npm test
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
         run: npm run build
 
       - name: Install production dependencies only
@@ -49,6 +68,26 @@ jobs:
           zip -r customers.zip . -x "*.map"
           cd ..
 
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lambda-package
+          path: dist/customers.zip
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Lambda artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: lambda-package
+          path: dist
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -62,28 +101,28 @@ jobs:
           terraform_version: 1.10.3
 
       - name: Terraform Init
+        working-directory: terraform
         run: |
           rm -f .terraform.lock.hcl
           terraform init -upgrade
-        working-directory: terraform
 
       - name: Terraform Format Check
-        run: terraform fmt -check
         working-directory: terraform
+        run: terraform fmt -check
         continue-on-error: true
 
       - name: Terraform Validate
-        run: terraform validate
         working-directory: terraform
+        run: terraform validate
 
       - name: Terraform Plan
-        run: terraform plan -out=tfplan
         working-directory: terraform
+        run: terraform plan -out=tfplan
 
       - name: Terraform Apply
-        run: terraform apply -auto-approve tfplan
         working-directory: terraform
+        run: terraform apply -auto-approve tfplan
 
       - name: Output API URL
-        run: terraform output api_gateway_url
         working-directory: terraform
+        run: terraform output api_gateway_url
