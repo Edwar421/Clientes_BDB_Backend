@@ -1,4 +1,5 @@
 import "reflect-metadata";
+import serverless from "serverless-http";
 import express from "express";
 import { AppDataSource } from "./ormconfig";
 import cors from "cors";
@@ -7,13 +8,14 @@ import { swaggerSpec } from "./config/swagger";
 import customerRoutes from "./routes/customers";
 
 const app = express();
-const appName = process.env.APP_NAME || "customers-dev";
-const PORT = Number(process.env.SERVER_PORT || 8080);
 
 app.use(cors());
 app.use(express.json());
 
-// Swagger UI
+app.get("/health", (_req, res) => {
+    res.json({ status: "ok" });
+});
+
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.get("/api-docs.json", (_req, res) => {
     res.setHeader("Content-Type", "application/json");
@@ -22,19 +24,19 @@ app.get("/api-docs.json", (_req, res) => {
 
 app.use("/api/customers", customerRoutes);
 
-const startServer = async () => {
-    try {
-        await AppDataSource.initialize();
-        console.log(`Database connected for ${appName}`);
+let isDbInitialized = false;
 
-        app.listen(PORT, () => {
-            console.log(`${appName} running on port ${PORT}`);
-            console.log(`Swagger UI available at http://localhost:${PORT}/api-docs`);
-        });
-    } catch (error) {
-        console.error("Error during Data Source initialization:", error);
-        process.exit(1);
+const initializeDatabase = async () => {
+    if (!isDbInitialized && !AppDataSource.isInitialized) {
+        await AppDataSource.initialize();
+        isDbInitialized = true;
+        console.log("Database connected");
     }
 };
 
-startServer();
+export const handler = async (event: any, context: any) => {
+    context.callbackWaitsForEmptyEventLoop = false;
+    await initializeDatabase();
+    const serverlessHandler = serverless(app);
+    return serverlessHandler(event, context);
+};

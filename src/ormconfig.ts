@@ -3,34 +3,34 @@ import { Customer } from "./entities/Customer";
 import dotenv from "dotenv";
 import path from "path";
 
-const appMode = (process.env.APP_MODE || "dev").toLowerCase();
-const envFile = appMode === "prod" ? ".env.prod" : ".env.dev";
+const isLambda = !!process.env.AWS_LAMBDA_FUNCTION_NAME;
 
-dotenv.config({ path: path.resolve(process.cwd(), envFile) });
+if (!isLambda) {
+    const envFile = process.env.APP_MODE === "prod" ? ".env.prod" : ".env.dev";
+    dotenv.config({ path: path.resolve(process.cwd(), envFile) });
+}
 
-const requiredEnvVars = [
-    "DB_HOST",
-    "DB_PORT",
-    "DB_USERNAME",
-    "DB_PASSWORD",
-    "DB_NAME",
-];
-requiredEnvVars.forEach((varName) => {
-    if (!process.env[varName]) {
-        throw new Error(`Missing required environment variable: ${varName}`);
-    }
-});
+const dbUsername = process.env.DB_USER || process.env.DB_USERNAME;
+const dbPassword = process.env.DB_PASSWORD;
+const dbHost = process.env.DB_HOST;
+const dbPort = process.env.DB_PORT;
+const dbName = process.env.DB_NAME;
+
+if (!dbHost || !dbPort || !dbUsername || !dbPassword || !dbName) {
+    throw new Error(
+        `Missing required database environment variables. Got: HOST=${dbHost}, PORT=${dbPort}, USER=${dbUsername ? "[SET]" : "[MISSING]"}, PASS=${dbPassword ? "[SET]" : "[MISSING]"}, NAME=${dbName}`
+    );
+}
 
 export const AppDataSource = new DataSource({
     type: "postgres",
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT ? parseInt(process.env.DB_PORT, 10) : undefined,
-    username: process.env.DB_USERNAME,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
+    host: dbHost,
+    port: parseInt(dbPort, 10),
+    username: dbUsername,
+    password: dbPassword,
+    database: dbName,
+    ssl: isLambda ? { rejectUnauthorized: false } : false,
     synchronize: true,
-    logging: false,
+    logging: !isLambda,
     entities: [Customer],
-    migrations: ["src/migrations/**/*.ts"],
-    subscribers: ["src/subscribers/**/*.ts"],
 });
