@@ -1,3 +1,4 @@
+/// <reference types="jest" />
 import { validateCustomerFields, normalizeText } from '../src/modules/customers/customer.controller';
 
 describe('normalizeText', () => {
